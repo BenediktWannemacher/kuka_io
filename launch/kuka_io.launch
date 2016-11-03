@@ -1,0 +1,13 @@
+<launch>
+	<group ns="kuka_a">
+		<node name="rsi_interface" pkg="kuka_io" type="rsi_interface.py">
+			<param name="port" value="5201"/>
+		</node>
+	</group>
+
+	<group ns="kuka_b">
+		<node name="rsi_interface" pkg="kuka_io" type="rsi_interface.py">
+			<param name="port" value="4201"/>
+		</node>
+	</group>
+</launch>
