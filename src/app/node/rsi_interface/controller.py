@@ -2,9 +2,9 @@ import rospy
 from app.core import util
 from std_msgs.msg._String import String
 import xml.etree.ElementTree as ET
-from app.node.rsi_interface.timeModel import TimeModel
 from thread import start_new_thread
 import socket
+import re
 
 
 
@@ -19,8 +19,9 @@ class Controller:
 		self.kukaIp = None
 		self.kukaPort = None
 		
-		self.msgTemplateXml = None
-		self.timeModel = TimeModel()
+		self.msgTemplateString = None
+		self.lastIPOC = None #includes xml tags <IPOC>
+		self.regex = re.compile(r"<IPOC>(\d+?)<\/IPOC>")
 		
 		self.msgFromKukaPublisher = rospy.Publisher(util.topicName("rsi_interface", "msg_from_kuka"), String, queue_size=1)
 		self.msgToKukaPublisher = rospy.Publisher(util.topicName("rsi_interface", "msg_to_kuka"), String, queue_size=1)
@@ -28,27 +29,32 @@ class Controller:
 		self.msgToKukaSock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 		
 		rospy.Subscriber(util.topicName("rsi_interface", "msg_template"), String, self.msgTemplateCb)
-		rospy.logwarn("First message template needs to be published before starting rsi...")
-		
+		util.logWarn("First message template needs to be published before starting rsi...")
 		
 		start_new_thread(self.recvFromKukaThread, ())
-		rospy.logwarn("recvFromKukaThread is running! Waiting for handshake message...")
+		util.logWarn("recvFromKukaThread is running! Waiting for handshake message...")
 	#eof
 	
 	
 	
 	def msgTemplateCb(self, msg):
 		try:
+			if(ET.fromstring(msg.data).find("IPOC") is None):
+				util.logErr("Missing IPOC! IPOC tag has to be included in message template. Can not set message template by this message...")
+				util.logErr(msg.data)
+				return
+			
 			firstMsg = False
-			if(self.msgTemplateXml is None):
+			if(self.msgTemplateString is None):
 				firstMsg = True
-				
-			self.msgTemplateXml = ET.ElementTree(ET.fromstring(msg.data))
+			
+			self.msgTemplateString = msg.data
 			
 			if(firstMsg):
-				rospy.logwarn("First message template recieved!")
+				util.logWarn("First message template recieved!")
 		except:
-			rospy.logerr("Invalid Message! Can not parse as XML")
+			util.logErr("Invalid xml structure! Can not set message template by this message...")
+			util.logErr(msg.data)
 	#eof
 	
 	
@@ -57,7 +63,7 @@ class Controller:
 		sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 		sock.bind((self.recvIp, self.recvPort))
 		
-		rospy.logwarn("Start listening. IP: "+str(self.recvIp)+" PORT: "+str(self.recvPort))
+		util.logWarn("Start listening. IP: "+str(self.recvIp)+" PORT: "+str(self.recvPort))
 	
 		while(True):
 			data, addr = sock.recvfrom(1024)
@@ -65,20 +71,27 @@ class Controller:
 			if(self.kukaIp is None or self.kukaPort is None):
 				self.kukaIp = addr[0]
 				self.kukaPort = addr[1]
-				rospy.logwarn("handshake message recieved. IP: "+str(self.kukaIp)+" ,PORT: "+str(self.kukaPort))
-		
+				util.logWarn("Handshake message recieved. IP: "+str(self.kukaIp)+" ,PORT: "+str(self.kukaPort))
+			
+			self.lastIPOC = self.regex.search(data).group(0)
+			self.sendToKuka()
 			self.msgFromKukaPublisher.publish(data)
-			self.timeModel.setIpocByXmlString(data)
+		#eo while
 	#eof
 	
 	
 	
-	def loop(self):
-		if(self.msgTemplateXml is not None and self.kukaIp is not None and self.kukaPort is not None):
-			msgStr = ET.tostring(self.msgTemplateXml.getroot())
+	def sendToKuka(self):
+		if(self.msgTemplateString is not None and self.kukaIp is not None and self.kukaPort is not None):
 			
-			self.msgTemplateXml.find("IPOC").text = str(self.timeModel.getIPOC())
+			msgStr = self.regex.sub(self.lastIPOC, self.msgTemplateString)
+			
 			self.msgToKukaSock.sendto(msgStr, (self.kukaIp, self.kukaPort))
 			self.msgToKukaPublisher.publish(msgStr)
+		else:
+			util.logErr("First message template or first handshake message has not arrived yet! Can not send data/start rsi")
 	#eof
+	
+	
+#eoc
 			

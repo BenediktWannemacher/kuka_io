@@ -15,12 +15,12 @@ class TimeModel:
 	
 	def setIPOC(self, ipoc):
 		self.lastIPOC = ipoc
-		self.timeDifference = ipoc - self.getMillisecondTimestamp()
-		
+		#self.timeDifference = ipoc - self.getMillisecondTimestamp()
 		return self
 	
 	def getIPOC(self):
-		return self.getMillisecondTimestamp()+self.timeDifference
+		return self.lastIPOC
+		#return self.getMillisecondTimestamp()+self.timeDifference
 	
 	def setIpocByXmlString(self, data):
 		xml = ET.fromstring(data)

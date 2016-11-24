@@ -1,0 +1,35 @@
+<launch>
+
+	<group ns="kuka_a">
+		<node name="rsi_interface" pkg="kuka_io" type="rsi_interface.py">
+			<param name="port" value="5201"/>
+		</node>
+
+		<node name="extract_a6" pkg="kuka_io" type="extract_a6.py">
+			<param name="ignore" value="10"/>
+		</node>
+
+		<node name="progress_controller" pkg="kuka_io" type="progress_controller.py">
+			<param name="ignore" value="10"/>
+			<param name="feedbackTopic" value="task_io/feedback"/>
+			<param name="effectorTopic" value="effector_io/serial_interface/write_to_serial"/>
+		</node>
+	</group>
+
+	<group ns="kuka_b">
+		<node name="rsi_interface" pkg="kuka_io" type="rsi_interface.py">
+			<param name="port" value="5202"/>
+		</node>
+
+		<node name="extract_a6" pkg="kuka_io" type="extract_a6.py">
+			<param name="ignore" value="10"/>
+		</node>
+
+		<node name="progress_controller" pkg="kuka_io" type="progress_controller.py">
+			<param name="ignore" value="10"/>
+			<param name="feedbackTopic" value="task_io/feedback"/>
+			<param name="effectorTopic" value="effector_io/serial_interface/write_to_serial"/>
+		</node>
+	</group>
+
+</launch>

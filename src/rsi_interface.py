@@ -15,17 +15,7 @@ def main(argv=None):
 		rospy.logfatal("Invalid port value!")
 		return
 	
-	controller = Controller(ip, port)
-	
-	loopFreq = 120
-	
-	rate = rospy.Rate(loopFreq)
-	rospy.loginfo("Start the main loop. Frequency: "+str(loopFreq)+" Interval: "+str(1000/loopFreq)+"ms")
-	
-	while not rospy.is_shutdown():
-		controller.loop()
-		rate.sleep()
-	
+	Controller(ip, port)
 	rospy.spin()
 #eof
 
@@ -36,7 +26,7 @@ def getArgs():
 	port = rospy.get_param('~port', None)
 	
 	if(port is None):
-		raise ValueError("No tag has been defined!")
+		raise ValueError(rospy.get_namespace() + "No tag has been defined!")
 	
 	return ip,port
 #eof
