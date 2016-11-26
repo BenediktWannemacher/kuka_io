@@ -19,6 +19,7 @@ include_directories(
 add_message_files(
   FILES
   A6.msg
+  Status.msg
 )
 
 generate_messages(

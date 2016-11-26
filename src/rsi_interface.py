@@ -15,8 +15,13 @@ def main(argv=None):
 		rospy.logfatal("Invalid port value!")
 		return
 	
-	Controller(ip, port)
-	rospy.spin()
+	rate = rospy.Rate(0.75)
+	
+	controller = Controller(ip, port)
+	
+	while(not rospy.is_shutdown()):
+		controller.publishStatus()
+		rate.sleep()
 #eof
 
 
